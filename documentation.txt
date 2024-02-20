@@ -1,0 +1,7 @@
+Overall Project:
+    - https://dev.to/nagatodev/how-to-connect-flask-to-reactjs-1k8i
+Backend:
+    - source env/bin/activate
+    - flask run
+Frontend:
+    - npm start
