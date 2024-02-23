@@ -11,7 +11,7 @@ connection = pymysql.connect(host='localhost',
 
 api = Flask(__name__)
 
-@api.route('/profile')
+@api.route('/sakila')
 def profile():
     top_films = top_five_rented_films()
     top_actors = top_five_actors_in_inventory()
