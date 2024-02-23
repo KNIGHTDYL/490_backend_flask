@@ -17,7 +17,7 @@ def profile():
     top_five_films = top_five_rented_films()
     top_five_actors = top_five_actors_in_inventory()
     cutomers = customers()
-    return jsonify({'top_five_films': top_five_films, 'top__five_actors': top_five_actors, 'customers': cutomers})
+    return jsonify({'top_five_films': top_five_films, 'top_five_actors': top_five_actors, 'customers': cutomers})
 
 # Returns the top 5 most rented movies + details
 def top_five_rented_films():
