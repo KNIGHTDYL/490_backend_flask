@@ -1,14 +1,17 @@
-import os
-from flask import Flask, render_template, request, url_for, redirect
-from flask_sqlalchemy import SQLAlchemy
+import pymysql.cursors
 
-from sqlalchemy.sql import func
+# Connect to the database
+connection = pymysql.connect(host='localhost',
+                             user='root',
+                             password='416G@*zy8k4r12',
+                             database='sakila',
+                             charset='utf8mb4',
+                             cursorclass=pymysql.cursors.DictCursor)
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] =\
-        'sqlite:///' + os.path.join(basedir, 'database.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
+with connection:
+    with connection.cursor() as cursor:
+        # Read a single record
+        sql = "SELECT * from actor"
+        cursor.execute(sql)
+        result = cursor.fetchone()
+        print(result)
