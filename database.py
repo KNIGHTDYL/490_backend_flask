@@ -12,11 +12,12 @@ connection = pymysql.connect(host='localhost',
 api = Flask(__name__)
 
 @api.route('/sakila')
+
 def profile():
-    top_films = top_five_rented_films()
-    top_actors = top_five_actors_in_inventory()
+    top_five_films = top_five_rented_films()
+    top_five_actors = top_five_actors_in_inventory()
     cutomers = customers()
-    return jsonify({'top_films': top_films, 'top_actors': top_actors, 'customers': cutomers})
+    return jsonify({'top_five_films': top_five_films, 'top__five_actors': top_five_actors, 'customers': cutomers})
 
 # Returns the top 5 most rented movies + details
 def top_five_rented_films():
@@ -52,18 +53,11 @@ def top_five_actors_in_inventory():
 def customers():
     cursor = connection.cursor()
     sql = """Select *
-            from customer"""
+            from customer
+            limit 10"""
     cursor.execute(sql)
     result = cursor.fetchall()
     return result
-
-
-# def get_actors():
-#     cursor = connection.cursor()
-#     sql = "SELECT * from actor limit 5"
-#     cursor.execute(sql)
-#     result = cursor.fetchall()
-#     return result
 
 if __name__ == '__main__':
     api.run(debug=True)
