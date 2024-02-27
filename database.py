@@ -19,6 +19,8 @@ def profile():
     cutomers = customers()
     return jsonify({'top_five_films': top_five_films, 'top_five_actors': top_five_actors, 'customers': cutomers})
 
+
+@api.route('/films')
 # Returns the top 5 most rented movies + details
 def top_five_rented_films():
     cursor = connection.cursor()

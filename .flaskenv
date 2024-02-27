@@ -1,2 +1,2 @@
-FLASK_APP=database.py
+FLASK_APP=sakila.py
 FLASK_ENV=development
