@@ -135,17 +135,19 @@ def get_top5_most_rented_movies():
             Film.title,
             Film.description,
             Film.release_year,
-            Film.language_id,
+            Language.name,
             Film.rental_duration,
             Film.rental_rate,
             Film.length,
             Film.rating,
             Film.special_features,
+            Film.last_update,
             func.count(Rental.rental_id).label('rental_count')
         )
         .join(Inventory, Film.film_id == Inventory.film_id)
         .join(Rental, Inventory.inventory_id == Rental.inventory_id)
-        .group_by(Film.film_id, Film.title, Film.description, Film.release_year, Film.language_id,
+        .join(Language, Film.language_id == Language.language_id)
+        .group_by(Film.film_id, Film.title, Film.description, Film.release_year, Language.name, Film.language_id,
                   Film.rental_duration, Film.rental_rate, Film.length, Film.rating, Film.special_features)
         .order_by(func.count(Rental.rental_id).desc())
         .limit(5)
@@ -160,13 +162,14 @@ def get_top5_most_rented_movies():
             'title': row.title,
             'description': row.description,
             'release_year': row.release_year,
-            'language_id': row.language_id,
+            'language_name': row.name,
             'rental_duration': row.rental_duration,
             'rental_rate': float(row.rental_rate),  # Convert Numeric to float
             'length': row.length,
             'rating': row.rating,
             'special_features': row.special_features,
-            'rental_count': row.rental_count
+            'rental_count': row.rental_count,
+            'last_update': row.last_update
         }
         for row in result
     ]
@@ -180,7 +183,7 @@ def top_actors_and_movies():
         Actor.actor_id,
         Actor.first_name,
         Actor.last_name,
-        db.func.count(FilmActor.film_id).label('film_count')
+        db.func.count(FilmActor.film_id).label('films_featured_in'),
     ).join(
         FilmActor, Actor.actor_id == FilmActor.actor_id
     ).group_by(
@@ -200,33 +203,66 @@ def top_actors_and_movies():
             'actor_id': actor.actor_id,
             'first_name': actor.first_name,
             'last_name': actor.last_name,
-            'film_count': actor.film_count,
+            'films_featured_in': actor.films_featured_in,
             'top_movies': []
         }
 
-        # SQLAlchemy query to get the top 5 rented movies for each actor along with rental count
+        # SQLAlchemy query to get the top rented movies for each actor along with rental count
         top_movies = db.session.query(
             Film.film_id,
             Film.title,
+            Film.description,
+            Film.release_year,
+            Language.name,
+            Film.rental_duration,
+            Film.rental_rate,
+            Film.length,
+            Film.rating,
+            Film.special_features,
+            Film.last_update,
             db.func.count(Rental.rental_id).label('rental_count')
         ).join(
             FilmActor, Film.film_id == FilmActor.film_id
         ).join(
             Inventory, Film.film_id == Inventory.film_id
         ).join(
+            Language, Film.language_id == Language.language_id
+        ).join(
             Rental, Inventory.inventory_id == Rental.inventory_id
         ).filter(
             FilmActor.actor_id == actor.actor_id
         ).group_by(
             Film.film_id,
-            Film.title
+            Film.title,
+            Film.description,
+            Film.release_year,
+            Language.name,
+            Film.rental_duration,
+            Film.rental_rate,
+            Film.length,
+            Film.rating,
+            Film.special_features,
+            Film.last_update,
         ).order_by(
             db.func.count(Rental.rental_id).desc()
         ).limit(5).all()
 
         # Append the top movies to the actor_data
         actor_data['top_movies'] = [
-            {'film_id': movie.film_id, 'title': movie.title, 'rental_count': movie.rental_count}
+            {
+                'film_id': movie.film_id,
+                'title': movie.title,
+                'description': movie.description,
+                'release_year': movie.release_year,
+                'language_name': movie.name,
+                'rental_duration': movie.rental_duration,
+                'rental_rate': float(movie.rental_rate),
+                'length': movie.length,
+                'rating': movie.rating,
+                'special_features': movie.special_features,
+                'last_update': movie.last_update,
+                'rental_count': movie.rental_count
+            }
             for movie in top_movies
         ]
 
@@ -235,6 +271,8 @@ def top_actors_and_movies():
 
     # Return the result as JSON
     return jsonify(result)
+
+
 
 @app.route('/search', methods=['GET'])
 def search_films():
