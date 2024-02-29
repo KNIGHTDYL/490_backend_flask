@@ -110,8 +110,6 @@ class Customer(db.Model):
     create_date = db.Column(db.DateTime, nullable=False)
     last_update = db.Column(db.DateTime, nullable=False)
 
-
-
 @app.route('/', methods=['GET'])
 def get_actors():
     actors = Actor.query.all()
@@ -272,41 +270,87 @@ def top_actors_and_movies():
     # Return the result as JSON
     return jsonify(result)
 
-
-
-@app.route('/search', methods=['GET'])
+@app.route('/films_and_actors', methods=['GET'])
 def search_films():
-    search_term = request.args.get('keyword')
+    # Join the Film, Inventory, and Rental tables
+    query = (
+        db.session.query(
+            Film.film_id,
+            Film.title,
+            Film.description,
+            Film.release_year,
+            Language.name.label('language_name'),
+            Film.rental_duration,
+            Film.rental_rate,
+            Film.length,
+            Film.rating,
+            Film.special_features,
+            func.count(Rental.rental_id).label('rental_count'),
+            Actor.first_name,
+            Actor.last_name,
+            Category.name.label('category_name')
+        )
+        .join(Language, Film.language_id == Language.language_id)
+        .join(FilmActor, Film.film_id == FilmActor.film_id)
+        .join(Actor, FilmActor.actor_id == Actor.actor_id)
+        .join(Inventory, Film.film_id == Inventory.film_id)
+        .join(Rental, Inventory.inventory_id == Rental.inventory_id)
+        .join(FilmCategory, Film.film_id == FilmCategory.film_id)
+        .join(Category, FilmCategory.category_id == Category.category_id)
+        .group_by(
+            Film.film_id,
+            Film.title,
+            Film.description,
+            Film.release_year,
+            Language.name,
+            Film.rental_duration,
+            Film.rental_rate,
+            Film.length,
+            Film.rating,
+            Film.special_features,
+            Actor.first_name,
+            Actor.last_name,
+            Category.name
+        )
+    )
+    
+    films_data = {}
+    
+    # Iterate through the query results
+    for row in query.all():
+        film_id = row.film_id
+        # If the film ID is not yet in the films_data dictionary, create a new entry
+        if film_id not in films_data:
+            films_data[film_id] = {
+                'film_id': film_id,
+                'title': row.title,
+                'description': row.description,
+                'release_year': row.release_year,
+                'language_name': row.language_name,
+                'rental_duration': row.rental_duration,
+                'rental_rate': float(row.rental_rate),
+                'length': row.length,
+                'rating': row.rating,
+                'special_features': row.special_features,
+                'rental_count': row.rental_count,
+                'actors': [],
+                'categories': []
+            }
+        # Add actor information to the film entry
+        films_data[film_id]['actors'].append({
+            'first_name': row.first_name,
+            'last_name': row.last_name
+        })
+        # Add category information to the film entry
+        films_data[film_id]['categories'].append(row.category_name)
 
-    films = db.session.query(Film).\
-        join(FilmActor, Film.film_id == FilmActor.film_id).\
-        join(Actor, FilmActor.actor_id == Actor.actor_id).\
-        join(FilmCategory, Film.film_id == FilmCategory.film_id).\
-        join(Category, FilmCategory.category_id == Category.category_id).\
-        filter(or_(
-            Film.title.ilike(f'%{search_term}%'),  # Search by film title
-             (Actor.first_name + ' ' + Actor.last_name).ilike(f'%{search_term}%'),  # Search by actor full name
-            Category.name.ilike(f'%{search_term}%')  # Search by category/genre
-        )).all()
-
-    # Convert SQLAlcheiiiimy objects to dictionaries for JSON serialization
-    films_json = []
-    for film in films:
-        film_dict = {
-            'film_id': film.film_id,
-            'title': film.title,
-            'description': film.description,
-            'release_year': film.release_year,
-            'rental_duration': film.rental_duration,
-            'rental_rate': float(film.rental_rate),  # Convert Numeric to float
-            'length': film.length,
-            'rating': film.rating,
-            'special_features': film.special_features,
-            # Add more fields as needed
-        }
-        films_json.append(film_dict)
-
-    return jsonify(films_json)
+    # Log the contents of films_data
+    print(films_data)
+    
+    # Convert the films_data dictionary to a list
+    films_and_actors = list(films_data.values())
+    
+    return jsonify(films_and_actors) 
 
 @app.route('/customers', methods=['GET'])
 def get_customers():
